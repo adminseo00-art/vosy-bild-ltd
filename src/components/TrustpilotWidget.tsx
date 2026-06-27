@@ -1,22 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Star, Check, Award, Plus, X, MessageSquare, ShieldCheck, User, Trash2 } from 'lucide-react';
+import { Star, Check, Award, Plus, X, MessageSquare, ShieldCheck, User } from 'lucide-react';
 import { Review } from '../types';
 
 const INITIAL_REVIEWS: Review[] = [
-  {
-    id: 'rev-1',
-    author: 'Sarah Jenkins',
-    rating: 5,
-    title: 'Outstanding Loft Extension',
-    content: 'Vose Build completed our loft extension in London and we could not be happier. From initial quote to final cleanup, Nemo and the team were professional, punctual, and kept the site clean. Exceptional attention to detail in the custom structural joinery!',
-    date: '12 June 2026',
-    isVerified: true,
-    reply: {
-      author: 'Nemo, Vose Build Ltd',
-      content: 'Thank you Sarah! It was a pleasure working on your property. We are delighted that you love the custom joinery and structural layout.',
-      date: '14 June 2026'
-    }
-  },
   {
     id: 'rev-2',
     author: 'David H.',
@@ -56,6 +42,13 @@ const INITIAL_REVIEWS: Review[] = [
   }
 ];
 
+const isSpamOrPlaceholderReview = (review: Review) => {
+  const contentStr = `${review.content} ${review.title} ${review.author}`.toLowerCase();
+  const isSpam = /5y5ry|y5ry|5ry|6u67|6u65|uutyu|564y|5ry5ry/i.test(contentStr);
+  const isPlaceholder = /nemo and the team|12 june 2026|loft extension in london/i.test(contentStr);
+  return isSpam || isPlaceholder;
+};
+
 export default function TrustpilotWidget() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -71,14 +64,8 @@ export default function TrustpilotWidget() {
     if (stored) {
       try {
         const parsed = JSON.parse(stored) as Review[];
-        // Filter out any spam/fake reviews automatically
-        const clean = parsed.filter((r) => {
-          const contentStr = `${r.content} ${r.title} ${r.author}`.toLowerCase();
-          const isSpam = /5y5ry|y5ry|5ry|6u67|6u65|uutyu|564y|5ry5ry/i.test(contentStr);
-          return !isSpam;
-        });
+        const clean = parsed.filter((r) => !isSpamOrPlaceholderReview(r));
 
-        // Seed with INITIAL_REVIEWS if empty or if everything got cleaned
         if (clean.length === 0) {
           setReviews(INITIAL_REVIEWS);
           localStorage.setItem('vose_build_reviews', JSON.stringify(INITIAL_REVIEWS));
@@ -119,12 +106,6 @@ export default function TrustpilotWidget() {
     setNewContent('');
     setNewRating(5);
     setIsModalOpen(false);
-  };
-
-  const handleDeleteReview = (id: string) => {
-    const updated = reviews.filter(r => r.id !== id);
-    setReviews(updated);
-    localStorage.setItem('vose_build_reviews', JSON.stringify(updated));
   };
 
   // Trustpilot calculations
@@ -321,13 +302,6 @@ export default function TrustpilotWidget() {
                 <div className="flex flex-col sm:items-end gap-1.5 shrink-0">
                   <div className="flex items-center gap-2">
                     {renderTrustpilotStars(review.rating, "w-3.5 h-3.5")}
-                    <button
-                      onClick={() => handleDeleteReview(review.id)}
-                      title="Delete Review"
-                      className="p-1 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition cursor-pointer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
                   </div>
                   <span className="text-xs text-gray-400 font-mono">{review.date}</span>
                 </div>
